@@ -176,4 +176,4 @@ If you call the runtime via `curl` from Git Bash on Windows, MSYS translates lea
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL-3.0 — see [LICENSE](LICENSE).
