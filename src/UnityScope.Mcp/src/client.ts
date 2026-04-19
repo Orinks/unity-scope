@@ -12,16 +12,45 @@ export class UnityScopeClient {
     }
   }
 
-  async get(path: string, query: Record<string, string> = {}): Promise<unknown> {
-    const url = new URL(this.discovery.endpoint + path);
-    for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
+  async get(path: string, query: Record<string, string | undefined> = {}): Promise<unknown> {
+    return this.request("GET", path, query);
+  }
 
+  async post(path: string, query: Record<string, string | undefined> = {}): Promise<unknown> {
+    return this.request("POST", path, query);
+  }
+
+  private async request(
+    method: string,
+    path: string,
+    query: Record<string, string | undefined>,
+  ): Promise<unknown> {
+    const url = new URL(this.discovery.endpoint + path);
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+    }
     const res = await fetch(url, {
+      method,
       headers: { "X-UnityScope-Token": this.discovery.auth_token },
     });
-    if (!res.ok) {
-      throw new Error(`UnityScope ${path} -> ${res.status} ${await res.text()}`);
+    const text = await res.text();
+    let parsed: unknown;
+    try {
+      parsed = text.length === 0 ? null : JSON.parse(text);
+    } catch {
+      parsed = text;
     }
-    return res.json();
+    if (!res.ok) {
+      const summary =
+        typeof parsed === "object" && parsed !== null
+          ? JSON.stringify(parsed)
+          : String(parsed ?? "");
+      throw new Error(`UnityScope ${method} ${path} -> ${res.status}: ${summary}`);
+    }
+    return parsed;
+  }
+
+  describe(): string {
+    return `${this.discovery.process} (pid ${this.discovery.pid}) at ${this.discovery.endpoint}`;
   }
 }

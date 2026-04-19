@@ -52,10 +52,15 @@ namespace UnityScope.Server
             if (path == "/diff" && method == "GET")
                 return _dispatcher.Run(() => DiffEndpoint.Handle(query));
 
-            // /find, /types, /events, /invoke to come. See docs/ARCHITECTURE.md.
+            if (path == "/find" && method == "GET")
+                return _dispatcher.Run(() => FindEndpoint.Handle(query));
 
-            if (path == "/invoke" && method == "POST" && !_allowInvoke)
-                return Response.Forbidden("invoke disabled; set UnityScope:AllowInvoke=true in BepInEx config.");
+            if (path == "/invoke" && method == "POST")
+            {
+                if (!_allowInvoke)
+                    return Response.Forbidden("invoke disabled; set UnityScope:AllowInvoke=true in BepInEx config.");
+                return _dispatcher.Run(() => InvokeEndpoint.Handle(query));
+            }
 
             return Response.NotFound(path);
         }

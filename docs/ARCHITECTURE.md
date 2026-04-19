@@ -38,12 +38,13 @@ See [TRANSPORT.md](TRANSPORT.md) for the discovery-file format and security mode
 | `GET /scene` | Active scene name + root canvases | Cheap orientation |
 | `GET /tree?root=<path>&depth=N&include=<filters>` | Partial hierarchy | Full dumps OOM agent context — always paginate |
 | `GET /node/<id>` | Full component list, field values, screen rect | Drill-down after `/tree` |
-| `GET /find?selector=...` | CSS-like selector queries | `Canvas Root > BlackoutButton[text*="Continue"]` |
-| `GET /diff?since=<snapshotId>` | What changed since last snapshot | **Killer feature** — lets agents observe action effects |
-| `GET /types?assembly=Assembly-CSharp` | Enumerate game types | Replaces dnSpy for "what classes exist" |
-| `GET /events` (SSE) | Live stream of mutations + button clicks | Watch instead of poll |
-| `POST /invoke` | Call method or set field | Gated behind `--allow-invoke` flag |
-| `POST /snapshot?label=...` | Persist current scene to disk | Agent uses normal `Read` tool to consume |
+| `GET /find?selector=...` | CSS-ish selector queries | `*[type=BlackoutButton][active]`, `*[text*=Continue]` — **shipped** |
+| `GET /snapshot?label=...` | Capture in-memory fingerprint | Pair with `/diff` — **shipped** |
+| `GET /snapshot/list` | List stored snapshots | Discovery — **shipped** |
+| `GET /diff?since=<snapshotId>` | What changed since last snapshot | **Killer feature** — lets agents observe action effects — **shipped** |
+| `POST /invoke` | Call method or set/get field | Gated behind `AllowInvoke` config — **shipped** |
+| `GET /types?assembly=Assembly-CSharp` | Enumerate game types | Replaces dnSpy for "what classes exist" — *roadmap* |
+| `GET /events` (SSE) | Live stream of mutations + button clicks | Watch instead of poll — *roadmap* |
 
 ## Phasing
 

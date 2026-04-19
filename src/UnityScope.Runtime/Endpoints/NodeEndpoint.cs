@@ -22,14 +22,13 @@ namespace UnityScope.Endpoints
             if (!string.IsNullOrEmpty(idRaw)
                 && int.TryParse(idRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id))
             {
-                foreach (var candidate in Resources.FindObjectsOfTypeAll<GameObject>())
-                {
-                    if (candidate.GetInstanceID() == id) { go = candidate; break; }
-                }
+                var resolved = TransformResolver.ByInstanceId(id);
+                if (resolved != null) go = resolved.gameObject;
             }
             else if (!string.IsNullOrEmpty(path))
             {
-                go = GameObject.Find(path);
+                var hits = TransformResolver.Resolve(path);
+                if (hits.Count > 0) go = hits[0].gameObject;
             }
             else
             {

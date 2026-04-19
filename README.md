@@ -2,13 +2,9 @@
 
 Agent-native introspection runtime for Mono Unity games. Think Unity Explorer, but designed for AI coding agents (Claude Code, Codex, Cursor) instead of humans clicking through a tree view.
 
-## What it is
+A BepInEx plugin exposes the running game's scene graph, components, types, and (gated) method invocation via a local-only HTTP API. An MCP server wraps that API as tools any modern AI coding agent can call: `unity_scene`, `unity_tree`, `unity_node`, `unity_find`, `unity_snapshot`, `unity_diff`, `unity_invoke`.
 
-A BepInEx plugin that exposes the running game's scene graph, components, types, and (optionally) method invocation via a local-only HTTP API. Agents query it through an MCP server or CLI to understand UI structure, observe state changes between actions, and build accurate mental models of unfamiliar games.
-
-Goal: be the premier agentic pipeline for Unity modding. Mono first (current scaffold). IL2CPP support planned — see [docs/IL2CPP.md](docs/IL2CPP.md). The transport, server, and JSON layers are shared between both runtimes; only the inspection layer forks.
-
-Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — a screen-reader accessibility mod for Blackout Rugby that needed deep, repeatable Unity UI introspection during development.
+Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — a screen-reader accessibility mod that needed deep, repeatable Unity UI introspection during development.
 
 ## Why not just use Unity Explorer?
 
@@ -16,34 +12,114 @@ Unity Explorer is a human GUI: in-game windows, mouse-driven tree expansion, man
 
 - **Structured output** — JSON, not log lines.
 - **Queryable** — selectors and filters; agents OOM on full dumps.
-- **Stable addressing** — IDs that survive scene reloads.
-- **Diffs** — what changed between snapshots is more valuable than any single snapshot. This is how an agent learns what a click *did*.
+- **Stable addressing** — instance IDs that survive scene reloads.
+- **Diffs** — what changed between two snapshots is more valuable than any single snapshot. This is how an agent learns what a click *did*.
 - **Remote invocation** — no human in the loop pressing F12.
 
-## Status
+## What you don't need
 
-Scaffolding only. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/TRANSPORT.md](docs/TRANSPORT.md).
+- **Unity Editor.** UnityScope runs inside the already-built game `.exe`. The csproj references the Unity DLLs that ship with the game's `_Data\Managed\` folder.
+- **Unity license, Unity Hub, or any Unity GUI.** The toolchain is .NET SDK + a text editor. Same workflow as any BepInEx plugin.
+
+## Requirements
+
+- A Unity game built with the **Mono** runtime (most pre-2020 commercial Unity titles, plus all of Blackout Games' work). IL2CPP support is planned — see [docs/IL2CPP.md](docs/IL2CPP.md).
+- **BepInEx 5.x** installed in the target game.
+- **.NET SDK** (any recent version) for building the plugin.
+- **Node.js 20+** for running the MCP server.
+
+## Install
+
+### 1. Build and deploy the plugin
+
+```bash
+# From repo root. Edit src/UnityScope.Runtime/UnityScope.Runtime.csproj and set
+# <GameDir> to your target game's install path before the first build.
+build.bat release
+```
+
+This drops `UnityScope.dll` into `<GameDir>\BepInEx\plugins\UnityScope\`.
+
+### 2. Launch the game once
+
+BepInEx loads the plugin. Confirm in `<GameDir>\BepInEx\LogOutput.log`:
+
+```
+[Info   :UnityScope] UnityScope listening: http://127.0.0.1:<port>/ (http, token-protected)
+```
+
+A discovery file appears at `%LOCALAPPDATA%\UnityScope\<process>_<pid>.json` containing the port and an auth token. Clients find it automatically.
+
+### 3. Build the MCP server
+
+```bash
+cd src/UnityScope.Mcp
+npm install
+npm run build
+```
+
+### 4. Register with your AI coding agent
+
+**Claude Code:**
+
+```bash
+claude mcp add unityscope -- node C:\Users\you\gh-projects\unity-scope\src\UnityScope.Mcp\dist\index.js
+```
+
+**Cursor / Windsurf / any other MCP-aware client:** add an entry pointing to the same `dist/index.js`.
+
+Once registered, the agent has tools `unity_scene`, `unity_tree`, etc. Try: *"What canvases are active in the game right now?"*
+
+## A typical agent workflow
+
+```
+1. unity_scene                                 → orient (active scene + canvases)
+2. unity_find selector="*Continue*"            → locate the Continue button
+3. unity_snapshot label="before-continue"      → baseline state (returns id)
+4. <user clicks Continue, or unity_invoke>
+5. unity_diff since=<id>                       → exactly what changed
+```
+
+The diff shows added/removed/modified nodes with per-field before/after values. Agents learn the consequences of actions instead of guessing.
+
+## Configuration
+
+Settings live in `<GameDir>\BepInEx\config\com.orinks.unityscope.cfg` (created on first launch):
+
+| Key | Default | Purpose |
+|---|---|---|
+| `Transport` | `http` | `http` (loopback HTTP, default) or `pipe` (named pipe stub — not yet implemented) |
+| `AllowInvoke` | `false` | Set `true` to allow `POST /invoke` to call methods and set fields. Logged on every call. |
+
+## Security model
+
+- HTTP listener binds **only to `127.0.0.1`** — not reachable from other machines.
+- Every request must carry the `X-UnityScope-Token` header; the token is generated per-launch and written to the discovery file. Other local users can't read your `%LOCALAPPDATA%`.
+- `/invoke` is off by default. When enabled, every successful invocation is logged with target id, type, member, and arg count.
+
+This is sufficient for single-user dev machines. Not designed for shared/CI environments.
 
 ## Layout
 
 ```
 src/
-  UnityScope.Runtime/   BepInEx plugin (net472, Mono Unity)
-  UnityScope.Mcp/       MCP server (TypeScript) wrapping the Runtime API
+  UnityScope.Runtime/   BepInEx Mono plugin
+    Endpoints/          /scene /tree /node /snapshot /diff /find /invoke
+    Inspection/         Hierarchy walker, component serializer, snapshot store, selector
+    Server/             Request router, main-thread dispatcher
+    Transport/          HTTP, named-pipe stub, discovery file
+    Json/               Streaming JSON writer
+  UnityScope.Mcp/       TypeScript MCP server (8 tools, stdio transport)
 docs/
-  ARCHITECTURE.md       3-layer design + endpoint catalog
-  TRANSPORT.md          Why loopback HTTP, port discovery, named pipe fallback
+  ARCHITECTURE.md       Three-layer design + endpoint catalog
+  TRANSPORT.md          Why loopback HTTP, port discovery, named pipe rationale
+  IL2CPP.md             Plan for IL2CPP runtime support (Mono is V1)
 ```
 
-## Build
+## Status
 
-```
-build.bat            Debug build of the runtime
-build.bat release    Builds and copies to <GameDir>\BepInEx\plugins\UnityScope\
-```
-
-Edit `GameDir` in `src/UnityScope.Runtime/UnityScope.Runtime.csproj` for your target game.
+V1. Runtime endpoints validated against a live game. MCP server speaks proper MCP/JSON-RPC. IL2CPP support, named-pipe transport, `/events` SSE, and a CLI client are roadmap.
 
 ## License
 
-TBD.
+MIT — see [LICENSE](LICENSE).

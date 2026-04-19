@@ -43,28 +43,7 @@ namespace UnityScope.Endpoints
                 .EndObject().ToString());
         }
 
-        private static List<Transform> ResolveRoots(string root)
-        {
-            var list = new List<Transform>();
-
-            if (string.IsNullOrEmpty(root))
-            {
-                foreach (var c in Object.FindObjectsOfType<Canvas>())
-                    if (c.transform.parent == null) list.Add(c.transform);
-                return list;
-            }
-
-            if (int.TryParse(root, NumberStyles.Integer, CultureInfo.InvariantCulture, out int id))
-            {
-                foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
-                    if (go.GetInstanceID() == id) { list.Add(go.transform); break; }
-                return list;
-            }
-
-            var found = GameObject.Find(root);
-            if (found != null) list.Add(found.transform);
-            return list;
-        }
+        private static List<Transform> ResolveRoots(string root) => TransformResolver.Resolve(root);
 
         private static void Walk(JsonWriter w, Transform t, int currentDepth, WalkContext ctx)
         {
