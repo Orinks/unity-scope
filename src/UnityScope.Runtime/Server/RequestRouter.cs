@@ -43,8 +43,16 @@ namespace UnityScope.Server
             if (path == "/node" && method == "GET")
                 return _dispatcher.Run(() => NodeEndpoint.Handle(query));
 
-            // /find, /diff, /types, /events, /invoke, /snapshot to come.
-            // See docs/ARCHITECTURE.md.
+            if (path == "/snapshot" && method == "GET")
+                return _dispatcher.Run(() => SnapshotEndpoint.Capture(query));
+
+            if (path == "/snapshot/list" && method == "GET")
+                return SnapshotEndpoint.List();
+
+            if (path == "/diff" && method == "GET")
+                return _dispatcher.Run(() => DiffEndpoint.Handle(query));
+
+            // /find, /types, /events, /invoke to come. See docs/ARCHITECTURE.md.
 
             if (path == "/invoke" && method == "POST" && !_allowInvoke)
                 return Response.Forbidden("invoke disabled; set UnityScope:AllowInvoke=true in BepInEx config.");
