@@ -4,7 +4,7 @@ Agent-native introspection runtime for Mono Unity games. Think Unity Explorer, b
 
 A BepInEx plugin exposes the running game's scene graph, components, types, and (gated) method invocation via a local-only HTTP API. An MCP server wraps that API as tools any modern AI coding agent can call: `unity_scene`, `unity_tree`, `unity_node`, `unity_find`, `unity_snapshot`, `unity_diff`, `unity_invoke`.
 
-Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — a screen-reader accessibility mod that needed deep, repeatable Unity UI introspection during development.
+Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — an in-development screen-reader accessibility mod for Blackout Rugby that needed deep, repeatable Unity UI introspection. The introspection patterns generalized; the accessibility mod itself is still being built.
 
 ## Why not just use Unity Explorer?
 
