@@ -63,7 +63,7 @@ npm run build
 **Claude Code:**
 
 ```bash
-claude mcp add unityscope -- node C:\Users\you\gh-projects\unity-scope\src\UnityScope.Mcp\dist\index.js
+claude mcp add unityscope -- node <path-to-your-clone>\unity-scope\src\UnityScope.Mcp\dist\index.js
 ```
 
 **Cursor / Windsurf / any other MCP-aware client:** add an entry pointing to the same `dist/index.js`.
