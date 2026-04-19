@@ -30,17 +30,47 @@ Unity Explorer is a human GUI: in-game windows, mouse-driven tree expansion, man
 
 ## Install
 
-### 1. Build and deploy the plugin
+This guide is written so an AI coding agent can follow it end-to-end given only the repo URL and the user's game install path. No file edits required.
+
+### 1. Confirm the game uses the Mono runtime
+
+UnityScope V1 only supports Mono Unity games. Quick check from the game's install folder:
+
+- `<GameDir>\GameAssembly.dll` exists → **IL2CPP**, not supported (see [docs/IL2CPP.md](docs/IL2CPP.md)).
+- `<GameDir>\<GameName>_Data\Managed\Assembly-CSharp.dll` exists → **Mono**, supported.
+
+### 2. Install BepInEx 5.x into the game
+
+Download from [BepInEx/BepInEx releases](https://github.com/BepInEx/BepInEx/releases). Pick the **Mono** build for your architecture (`BepInEx_x64_5.4.x.x.zip` for most modern games). Extract the contents directly into `<GameDir>` so that `<GameDir>\BepInEx\` and `<GameDir>\winhttp.dll` (or equivalent) sit next to the game's `.exe`. Launch the game once so BepInEx generates its config folders, then close it.
+
+### 3. Clone this repo
 
 ```bash
-# From repo root. Edit src/UnityScope.Runtime/UnityScope.Runtime.csproj and set
-# <GameDir> to your target game's install path before the first build.
-build.bat release
+git clone https://github.com/Orinks/unity-scope.git
+cd unity-scope
 ```
 
-This drops `UnityScope.dll` into `<GameDir>\BepInEx\plugins\UnityScope\`.
+Anywhere on disk is fine.
 
-### 2. Launch the game once
+### 4. Build and deploy the plugin
+
+The build accepts the game path as a parameter — no need to edit any project files.
+
+```bash
+# Windows:
+build.bat release "C:\Program Files (x86)\Steam\steamapps\common\YourGame"
+
+# Mac/Linux (rare for Unity Mono games, but works):
+./build.sh release "/path/to/your/game"
+
+# Or call dotnet directly:
+dotnet build src/UnityScope.Runtime/UnityScope.Runtime.csproj -c Release \
+  -p:GameDir="C:\path\to\your\game"
+```
+
+The build auto-detects the `*_Data\Managed` folder under `<GameDir>` and deploys `UnityScope.dll` to `<GameDir>\BepInEx\plugins\UnityScope\`. Helpful errors fire if BepInEx isn't installed or if the game is IL2CPP.
+
+### 5. Launch the game once
 
 BepInEx loads the plugin. Confirm in `<GameDir>\BepInEx\LogOutput.log`:
 
@@ -48,9 +78,9 @@ BepInEx loads the plugin. Confirm in `<GameDir>\BepInEx\LogOutput.log`:
 [Info   :UnityScope] UnityScope listening: http://127.0.0.1:<port>/ (http, token-protected)
 ```
 
-A discovery file appears at `%LOCALAPPDATA%\UnityScope\<process>_<pid>.json` containing the port and an auth token. Clients find it automatically.
+A discovery file appears under the platform's local app data folder (`%LOCALAPPDATA%\UnityScope\` on Windows) containing the port and auth token. MCP clients find it automatically.
 
-### 3. Build the MCP server
+### 6. Build the MCP server
 
 ```bash
 cd src/UnityScope.Mcp
@@ -58,17 +88,17 @@ npm install
 npm run build
 ```
 
-### 4. Register with your AI coding agent
+### 7. Register with your AI coding agent
 
 **Claude Code:**
 
 ```bash
-claude mcp add unityscope -- node <path-to-your-clone>\unity-scope\src\UnityScope.Mcp\dist\index.js
+claude mcp add unityscope -- node <absolute-path-to-clone>/src/UnityScope.Mcp/dist/index.js
 ```
 
 **Cursor / Windsurf / any other MCP-aware client:** add an entry pointing to the same `dist/index.js`.
 
-Once registered, the agent has tools `unity_scene`, `unity_tree`, etc. Try: *"What canvases are active in the game right now?"*
+Once registered, the agent has tools `unity_scene`, `unity_tree`, etc. Sanity-check by asking: *"What canvases are active in the game right now?"*
 
 ## A typical agent workflow
 

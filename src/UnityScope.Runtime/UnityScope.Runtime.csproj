@@ -8,52 +8,82 @@
     <OutputType>Library</OutputType>
     <Nullable>disable</Nullable>
 
-    <!-- Set this to your target game install path -->
-    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Blackout Rugby</GameDir>
-    <ManagedSubdir>Blackout Rugby_Data\Managed</ManagedSubdir>
+    <!-- Pass via command line: dotnet build -c Release -p:GameDir="C:\path\to\game" -->
+    <!-- Or override per-build: ManagedDir, BepInExDir -->
 
-    <OutputPath Condition="'$(Configuration)' == 'Release'">$(GameDir)\BepInEx\plugins\UnityScope\</OutputPath>
+    <OutputPath Condition="'$(Configuration)' == 'Release' And '$(GameDir)' != ''">$(GameDir)\BepInEx\plugins\UnityScope\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BepInExDir>$(GameDir)\BepInEx\core</BepInExDir>
-    <ManagedDir>$(GameDir)\$(ManagedSubdir)</ManagedDir>
-  </PropertyGroup>
+  <!-- Resolve Unity + BepInEx paths from $(GameDir) before assembly references are
+       resolved. Auto-detects the *_Data\Managed folder so the same csproj works
+       across any Mono Unity game without editing. -->
+  <Target Name="ResolveUnityPaths" BeforeTargets="ResolveAssemblyReferences">
 
-  <ItemGroup>
-    <Reference Include="BepInEx">
-      <HintPath>$(BepInExDir)\BepInEx.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>$(BepInExDir)\0Harmony.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
+    <Error Condition="'$(GameDir)' == ''"
+           Text="GameDir not set. Build with: dotnet build -c Release -p:GameDir=&quot;C:\path\to\your\Unity\game&quot;" />
 
-  <ItemGroup>
-    <Reference Include="UnityEngine">
-      <HintPath>$(ManagedDir)\UnityEngine.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(ManagedDir)\UnityEngine.UI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>$(ManagedDir)\UnityEngine.UIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(ManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
+    <Error Condition="!Exists('$(GameDir)')"
+           Text="GameDir does not exist: $(GameDir)" />
+
+    <Error Condition="Exists('$(GameDir)\GameAssembly.dll')"
+           Text="$(GameDir) looks like an IL2CPP game (GameAssembly.dll present). UnityScope V1 supports Mono only. See docs/IL2CPP.md." />
+
+    <PropertyGroup Condition="'$(ManagedDir)' == ''">
+      <!-- Enumerate *_Data subdirectories under GameDir. Property functions
+           return a semicolon-separated string when multiple match; .Split(';')[0]
+           picks the first (typical Unity games have exactly one *_Data folder). -->
+      <_DataDirs>$([System.IO.Directory]::GetDirectories('$(GameDir)', '*_Data'))</_DataDirs>
+      <_FirstDataDir>$(_DataDirs.Split(';')[0])</_FirstDataDir>
+      <ManagedDir Condition="'$(_FirstDataDir)' != ''">$(_FirstDataDir)\Managed</ManagedDir>
+    </PropertyGroup>
+
+    <Error Condition="'$(ManagedDir)' == '' Or !Exists('$(ManagedDir)\UnityEngine.dll')"
+           Text="Could not find Unity Managed dir under $(GameDir) (looked for *_Data\Managed\UnityEngine.dll). Pass -p:ManagedDir=&quot;...&quot; if your game uses a non-standard layout." />
+
+    <PropertyGroup>
+      <BepInExDir Condition="'$(BepInExDir)' == ''">$(GameDir)\BepInEx\core</BepInExDir>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(BepInExDir)\BepInEx.dll')"
+           Text="BepInEx not found at $(BepInExDir)\BepInEx.dll. Install BepInEx 5.x for Mono into the game first: https://github.com/BepInEx/BepInEx/releases" />
+
+    <Message Importance="High" Text="UnityScope build paths:" />
+    <Message Importance="High" Text="  GameDir   = $(GameDir)" />
+    <Message Importance="High" Text="  ManagedDir = $(ManagedDir)" />
+    <Message Importance="High" Text="  BepInExDir = $(BepInExDir)" />
+
+    <ItemGroup>
+      <Reference Include="BepInEx">
+        <HintPath>$(BepInExDir)\BepInEx.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="0Harmony">
+        <HintPath>$(BepInExDir)\0Harmony.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="UnityEngine">
+        <HintPath>$(ManagedDir)\UnityEngine.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="UnityEngine.CoreModule">
+        <HintPath>$(ManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="UnityEngine.UI">
+        <HintPath>$(ManagedDir)\UnityEngine.UI.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="UnityEngine.UIModule">
+        <HintPath>$(ManagedDir)\UnityEngine.UIModule.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="UnityEngine.IMGUIModule">
+        <HintPath>$(ManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+  </Target>
 
 </Project>
