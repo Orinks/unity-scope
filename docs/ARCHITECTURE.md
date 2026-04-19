@@ -52,6 +52,10 @@ See [TRANSPORT.md](TRANSPORT.md) for the discovery-file format and security mode
 3. `/invoke` + safety gating + audit log of every invocation.
 4. Generality test — port to a second game; extract Blackout adapters as a separate package.
 
+## Mono and IL2CPP
+
+The architecture deliberately isolates Unity-touching code into the Inspection layer behind an `IInspector` seam (planned). Transport, Server, Endpoints, and JSON compile unchanged into either a Mono plugin DLL or an IL2CPP plugin DLL. See [IL2CPP.md](IL2CPP.md) for the dual-build plan.
+
 ## Non-goals
 
 - Not a debugger. No breakpoints, no stepping.

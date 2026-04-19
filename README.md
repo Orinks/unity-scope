@@ -6,6 +6,8 @@ Agent-native introspection runtime for Mono Unity games. Think Unity Explorer, b
 
 A BepInEx plugin that exposes the running game's scene graph, components, types, and (optionally) method invocation via a local-only HTTP API. Agents query it through an MCP server or CLI to understand UI structure, observe state changes between actions, and build accurate mental models of unfamiliar games.
 
+Goal: be the premier agentic pipeline for Unity modding. Mono first (current scaffold). IL2CPP support planned — see [docs/IL2CPP.md](docs/IL2CPP.md). The transport, server, and JSON layers are shared between both runtimes; only the inspection layer forks.
+
 Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — a screen-reader accessibility mod for Blackout Rugby that needed deep, repeatable Unity UI introspection during development.
 
 ## Why not just use Unity Explorer?
