@@ -23,7 +23,7 @@ Unity Explorer is a human GUI: in-game windows, mouse-driven tree expansion, man
 
 ## Requirements
 
-- A Unity game built with the **Mono** runtime (most pre-2020 commercial Unity titles, plus all of Blackout Games' work). IL2CPP support is planned — see [docs/IL2CPP.md](docs/IL2CPP.md).
+- A Unity game built with the **Mono** runtime (most pre-2020 commercial Unity titles). IL2CPP support is planned — see [docs/IL2CPP.md](docs/IL2CPP.md).
 - **BepInEx 5.x** installed in the target game.
 - **.NET SDK** (any recent version) for building the plugin.
 - **Node.js 20+** for running the MCP server.
