@@ -37,8 +37,14 @@ namespace UnityScope.Server
             if (path == "/scene" && method == "GET")
                 return _dispatcher.Run(() => SceneEndpoint.Handle());
 
-            // /tree, /node, /find, /diff, /types, /events, /invoke, /snapshot
-            //   to be added in spike phase. See docs/ARCHITECTURE.md.
+            if (path == "/tree" && method == "GET")
+                return _dispatcher.Run(() => TreeEndpoint.Handle(query));
+
+            if (path == "/node" && method == "GET")
+                return _dispatcher.Run(() => NodeEndpoint.Handle(query));
+
+            // /find, /diff, /types, /events, /invoke, /snapshot to come.
+            // See docs/ARCHITECTURE.md.
 
             if (path == "/invoke" && method == "POST" && !_allowInvoke)
                 return Response.Forbidden("invoke disabled; set UnityScope:AllowInvoke=true in BepInEx config.");
