@@ -90,6 +90,26 @@ Settings live in `<GameDir>\BepInEx\config\com.orinks.unityscope.cfg` (created o
 |---|---|---|
 | `Transport` | `http` | `http` (loopback HTTP, default) or `pipe` (named pipe stub — not yet implemented) |
 | `AllowInvoke` | `false` | Set `true` to allow `POST /invoke` to call methods and set fields. Logged on every call. |
+| `AutoDetectText` | `true` | Convention-based auto-detection of text on unknown UI types. See below. |
+| `TextExtractors` | empty | Optional explicit text-extractor rules. Agents normally register these at runtime instead. |
+
+### Reading text from custom UI types
+
+UnityScope reads text from three layers, in order:
+
+1. **Built-in.** `UnityEngine.UI.Text` and `TMPro.TextMeshPro*` work without any setup.
+2. **Convention-based auto-detection.** For any other component type, UnityScope tries common property names (`text`, `Text`, `Label`, `Caption`, `DisplayText`) and no-arg method names (`GetText`, `GetLabel`, `GetCaption`, `GetDisplayText`) returning a string. The result is cached per type so reflection only runs once. Catches the great majority of custom UI types without configuration.
+3. **Explicit rules.** For types that don't follow conventions, register a rule.
+
+**The expected workflow is agentic, not manual.** When an agent encounters a UI element whose text isn't surfaced, it inspects the component with `unity_node`, identifies the relevant property/method, and registers the rule via `unity_register_text_extractor`. The rule persists to `<plugins>\UnityScope\text-extractors.txt` so it survives restarts. No human needs to know UI type names.
+
+If you'd rather seed rules manually, the same rules can also go in the `TextExtractors` cfg key:
+
+```
+TextExtractors = BlackoutButton:method:GetText,MyGame.SignText:property:Caption
+```
+
+Disable convention-based auto-detection if it produces false positives by setting `AutoDetectText = false` in the cfg.
 
 ## Security model
 
@@ -119,6 +139,10 @@ docs/
 ## Status
 
 V1. Runtime endpoints validated against a live game. MCP server speaks proper MCP/JSON-RPC. IL2CPP support, named-pipe transport, `/events` SSE, and a CLI client are roadmap.
+
+## Note for Git Bash / MSYS users
+
+If you call the runtime via `curl` from Git Bash on Windows, MSYS translates leading-slash paths into Windows paths (`/Canvas` → `C:/Program Files/Git/Canvas`). Either pre-encode the slash (`%2FCanvas`), prefix the env (`MSYS_NO_PATHCONV=1 curl ...`), or just use instance IDs (recommended for agents anyway — they're stable and unambiguous). MCP clients are unaffected.
 
 ## License
 

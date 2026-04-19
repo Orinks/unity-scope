@@ -129,6 +129,37 @@ server.registerTool(
 );
 
 server.registerTool(
+  "unity_list_text_extractors",
+  {
+    description: "Lists currently registered text-extractor rules and reports whether convention-based auto-detection is enabled. Use to confirm what custom UI types UnityScope already knows about.",
+    inputSchema: {},
+  },
+  async () => tool(() => client().get("/text-extractors")),
+);
+
+server.registerTool(
+  "unity_register_text_extractor",
+  {
+    description: "Teaches UnityScope how to read user-facing text from a custom component type. Use when unity_node shows a component with a text-bearing field that isn't surfaced in unity_tree/unity_find output. Persists to text-extractors.txt by default so the rule survives restarts. Most games don't need this — convention-based auto-detection handles common naming patterns out of the box.",
+    inputSchema: {
+      type: z.string().describe("Substring of the component's Type.FullName, e.g. 'BlackoutButton' or 'MyGame.UI.FancyLabel'."),
+      member: z.string().describe("Name of the public property or no-arg method that returns the user-facing string."),
+      kind: z.enum(["property", "method"]).describe("Whether 'member' is a property or a no-arg method."),
+      persist: z.boolean().default(true).describe("Write the rule to text-extractors.txt so it survives restarts. Default true."),
+    },
+  },
+  async ({ type, member, kind, persist }) =>
+    tool(() =>
+      client().post("/text-extractors", {
+        type,
+        member,
+        kind,
+        persist: persist === false ? "false" : "true",
+      }),
+    ),
+);
+
+server.registerTool(
   "unity_invoke",
   {
     description: "Calls a method or sets/gets a public property/field on a component. GATED — requires UnityScope:AllowInvoke=true in the game's BepInEx config; otherwise returns 403. V1 supports primitive args only (string/bool/int/long/float/double/enum). Action defaults to 'call' if args present, 'set' if value present, otherwise 'call' (no-arg method).",

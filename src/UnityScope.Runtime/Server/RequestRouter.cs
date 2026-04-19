@@ -55,6 +55,12 @@ namespace UnityScope.Server
             if (path == "/find" && method == "GET")
                 return _dispatcher.Run(() => FindEndpoint.Handle(query));
 
+            if (path == "/text-extractors" && method == "GET")
+                return TextExtractorsEndpoint.List();
+
+            if (path == "/text-extractors" && method == "POST")
+                return TextExtractorsEndpoint.Register(query);
+
             if (path == "/invoke" && method == "POST")
             {
                 if (!_allowInvoke)

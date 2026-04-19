@@ -55,53 +55,32 @@ namespace UnityScope.Inspection
             return results;
         }
 
-        // "/Canvas/Safe Area/Continue" — walk segment-by-segment from any matching root.
-        // Handles inactive ancestors (GameObject.Find can't), and tolerates spaces.
+        // "/Canvas/Safe Area/Continue" — brute-force scan every Transform, compare
+        // its computed full path. Slower than a segment-walk but bulletproof: works
+        // across additive scene loads (where multiple GameObjects can share a name
+        // at different roots) and inactive branches. Returns the first match if
+        // multiple share the same path; instance IDs are the right addressing for
+        // unambiguous targeting.
         private static Transform ResolveAbsolutePath(string path)
         {
-            var segments = path.Substring(1).Split('/');
-            if (segments.Length == 0) return null;
-
-            foreach (var root in AllRootCanvases())
+            // Iterate GameObjects, not Transforms: FindObjectsOfTypeAll<Transform>()
+            // is exact-type and silently excludes every UI element (they have
+            // RectTransform). GameObjects cover both worlds via go.transform.
+            foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>())
             {
-                if (root.gameObject.name != segments[0]) continue;
-                var t = root;
-                bool ok = true;
-                for (int i = 1; i < segments.Length; i++)
-                {
-                    var next = FindChildByName(t, segments[i]);
-                    if (next == null) { ok = false; break; }
-                    t = next;
-                }
-                if (ok) return t;
-            }
-
-            // Not a canvas root — try ALL root GameObjects in active scene.
-            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-            foreach (var go in scene.GetRootGameObjects())
-            {
-                if (go.name != segments[0]) continue;
-                var t = go.transform;
-                bool ok = true;
-                for (int i = 1; i < segments.Length; i++)
-                {
-                    var next = FindChildByName(t, segments[i]);
-                    if (next == null) { ok = false; break; }
-                    t = next;
-                }
-                if (ok) return t;
+                if (go == null) continue;
+                if (go.scene.rootCount == 0) continue;   // skip prefab/asset GOs
+                if (BuildPath(go.transform) == path) return go.transform;
             }
             return null;
         }
 
-        private static Transform FindChildByName(Transform parent, string name)
+        private static string BuildPath(Transform t)
         {
-            for (int i = 0; i < parent.childCount; i++)
-            {
-                var child = parent.GetChild(i);
-                if (child.gameObject.name == name) return child;
-            }
-            return null;
+            var parts = new List<string>();
+            while (t != null) { parts.Add(t.gameObject.name); t = t.parent; }
+            parts.Reverse();
+            return "/" + string.Join("/", parts);
         }
     }
 }
