@@ -2,7 +2,7 @@
 
 Agent-native introspection runtime for Mono Unity games. Think Unity Explorer, but designed for AI coding agents (Claude Code, Codex, Cursor) instead of humans clicking through a tree view.
 
-A BepInEx plugin exposes the running game's scene graph, components, types, and (gated) method invocation via a local-only HTTP API. An MCP server wraps that API as tools any modern AI coding agent can call: `unity_scene`, `unity_tree`, `unity_node`, `unity_find`, `unity_snapshot`, `unity_diff`, `unity_invoke`.
+A BepInEx plugin exposes the running game's scene graph, components, types, and (gated) method invocation via a local-only HTTP API. An MCP server wraps that API as tools any modern AI coding agent can call: `unity_scene`, `unity_tree`, `unity_node`, `unity_find`, `unity_snapshot`, `unity_list_snapshots`, `unity_diff`, `unity_list_text_extractors`, `unity_register_text_extractor`, `unity_invoke`.
 
 Spun out from patterns developed in [blackout-access](https://github.com/Orinks/blackout-access) — an in-development screen-reader accessibility mod for Blackout Rugby that needed deep, repeatable Unity UI introspection. The introspection patterns generalized; the accessibility mod itself is still being built.
 
@@ -159,7 +159,7 @@ src/
     Server/             Request router, main-thread dispatcher
     Transport/          HTTP, named-pipe stub, discovery file
     Json/               Streaming JSON writer
-  UnityScope.Mcp/       TypeScript MCP server (8 tools, stdio transport)
+  UnityScope.Mcp/       TypeScript MCP server (10 tools, stdio transport)
 docs/
   ARCHITECTURE.md       Three-layer design + endpoint catalog
   TRANSPORT.md          Why loopback HTTP, port discovery, named pipe rationale
