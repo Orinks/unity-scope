@@ -8,9 +8,11 @@ Reality on Windows:
 
 - **Windows Firewall does not prompt or block traffic on `127.0.0.1`.** Loopback is exempt by default policy. The firewall prompt you've seen for other dev tools is triggered by binding to `0.0.0.0` or a non-loopback adapter — UnityScope binds explicitly to `IPAddress.Loopback`, never `Any`.
 - **No URL ACL needed for `127.0.0.1`.** `HttpListener` requires `netsh http add urlacl` only for hostname or `+` prefixes. Loopback IP literal works under a normal user account.
-- **The real failure mode is port conflicts.** Hardcoding any port (8080, 9000, 38000…) means a second game launch, or another tool already using that port, fails. So we don't hardcode.
+- **Port conflicts are the real failure mode.** Hardcoding any single port (8080, 9000, 38000…) without a fallback means a second game launch, or another tool already using that port, fails.
 
-Resolution: bind to port `0`. The OS picks a free ephemeral port. We then write the actual port to a discovery file so clients can find us.
+Resolution: prefer a stable loopback port (`17897` by default, configurable via `UnityScope:HttpPort`), and fall back to an OS-assigned free port if that port is in use (e.g. a second game instance). The actual port is always written to a discovery file so clients can find us either way.
+
+The stable default matters because MCP clients are long-lived. When you rebuild a mod, quit the game, and relaunch, the HTTP port staying the same means the MCP client can keep using its cached endpoint — no Claude Code restart required. (The client also refreshes discovery whenever the file changes, so a fallback to a random port still works; the stable port is a quality-of-life optimization, not a correctness requirement.)
 
 ## Discovery file
 

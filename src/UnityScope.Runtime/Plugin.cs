@@ -19,6 +19,7 @@ namespace UnityScope
         private MainThreadDispatcher _dispatcher;
 
         private ConfigEntry<string> _transportKind;
+        private ConfigEntry<int> _httpPort;
         private ConfigEntry<bool> _allowInvoke;
         private ConfigEntry<string> _textExtractors;
         private ConfigEntry<bool> _autoDetectText;
@@ -30,6 +31,10 @@ namespace UnityScope
 
             _transportKind = Config.Bind("UnityScope", "Transport", "http",
                 "Transport for the agent API. 'http' (loopback, default) or 'pipe' (named pipe fallback).");
+            _httpPort = Config.Bind("UnityScope", "HttpPort", HttpTransport.DefaultPort,
+                "Preferred loopback port for the http transport. Stable across restarts so MCP clients don't "
+                + "have to re-resolve discovery on every launch. If the port is already in use (e.g. a second "
+                + "game instance), an OS-assigned free port is used instead.");
             _allowInvoke = Config.Bind("UnityScope", "AllowInvoke", false,
                 "If true, POST /invoke can call methods and set fields on live components. Off by default.");
             _textExtractors = Config.Bind("UnityScope", "TextExtractors", "",
@@ -51,7 +56,7 @@ namespace UnityScope
 
             try
             {
-                _transport = TransportFactory.Create(_transportKind.Value, _router);
+                _transport = TransportFactory.Create(_transportKind.Value, _router, _httpPort.Value);
                 _transport.Start();
                 Logger.LogInfo($"UnityScope listening: {_transport.EndpointDescription}");
             }

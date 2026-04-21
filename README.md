@@ -119,6 +119,7 @@ Settings live in `<GameDir>\BepInEx\config\com.orinks.unityscope.cfg` (created o
 | Key | Default | Purpose |
 |---|---|---|
 | `Transport` | `http` | `http` (loopback HTTP, default) or `pipe` (named pipe stub — not yet implemented) |
+| `HttpPort` | `17897` | Preferred loopback port for the http transport. Stable across restarts so MCP clients don't have to re-resolve discovery every launch. Falls back to an OS-assigned free port if this one is in use (e.g. a second game instance). |
 | `AllowInvoke` | `false` | Set `true` to allow `POST /invoke` to call methods and set fields. Logged on every call. |
 | `AutoDetectText` | `true` | Convention-based auto-detection of text on unknown UI types. See below. |
 | `TextExtractors` | empty | Optional explicit text-extractor rules. Agents normally register these at runtime instead. |

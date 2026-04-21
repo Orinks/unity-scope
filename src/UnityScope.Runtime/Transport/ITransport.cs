@@ -11,7 +11,7 @@ namespace UnityScope.Transport
 
     internal static class TransportFactory
     {
-        public static ITransport Create(string kind, RequestRouter router)
+        public static ITransport Create(string kind, RequestRouter router, int httpPort = HttpTransport.DefaultPort)
         {
             switch ((kind ?? "http").ToLowerInvariant())
             {
@@ -19,7 +19,7 @@ namespace UnityScope.Transport
                     return new NamedPipeTransport(router);
                 case "http":
                 default:
-                    return new HttpTransport(router);
+                    return new HttpTransport(router, httpPort);
             }
         }
     }

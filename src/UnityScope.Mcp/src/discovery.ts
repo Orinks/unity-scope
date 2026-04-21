@@ -11,6 +11,15 @@ export interface DiscoveryRecord {
   started_utc: string;
 }
 
+export interface ResolvedDiscovery {
+  record: DiscoveryRecord;
+  // Path of the file the record was read from, and its mtime. Used to detect
+  // game restarts: a new process writes a new discovery file (new token/port),
+  // so the MCP client can re-read instead of holding a stale record.
+  path: string;
+  mtimeMs: number;
+}
+
 export function discoveryDir(): string {
   const local =
     process.env.LOCALAPPDATA ||
@@ -18,9 +27,15 @@ export function discoveryDir(): string {
   return join(local, "UnityScope");
 }
 
-export function findDiscovery(): DiscoveryRecord {
+export function findDiscovery(): ResolvedDiscovery {
   const explicit = process.env.UNITY_SCOPE_DISCOVERY;
-  if (explicit) return JSON.parse(readFileSync(explicit, "utf-8"));
+  if (explicit) {
+    return {
+      record: JSON.parse(readFileSync(explicit, "utf-8")),
+      path: explicit,
+      mtimeMs: statSync(explicit).mtimeMs,
+    };
+  }
 
   const dir = discoveryDir();
   let files: string[];
@@ -39,5 +54,10 @@ export function findDiscovery(): DiscoveryRecord {
     .map((f) => ({ f, mtime: statSync(join(dir, f)).mtimeMs }))
     .sort((a, b) => b.mtime - a.mtime)[0];
 
-  return JSON.parse(readFileSync(join(dir, newest.f), "utf-8"));
+  const path = join(dir, newest.f);
+  return {
+    record: JSON.parse(readFileSync(path, "utf-8")),
+    path,
+    mtimeMs: newest.mtime,
+  };
 }
